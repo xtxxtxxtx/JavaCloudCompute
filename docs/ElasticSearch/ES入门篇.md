@@ -1,24 +1,17 @@
+﻿@[toc]
 #### 1、ES是什么
-
 - 一个分布式实时文档存储，每个字段可以被索引和搜索
 - 一个分布式实时分析搜索引擎
 - 能胜任上百个服务节点的扩展，并且支持PB级别的结构化或者是非结构化数据
 - 基于Lucene，隐藏复杂性，提供简单易用的Restful API接口、Java API接口。ES是一个可高度扩展的全文搜索和分析引擎，可以快速地、近乎实时的存储、查询和分析大量数据
-
 #### 2、ES基本结构
-
 ##### 2.1、结构图
-
-![](/Users/xiaotongxin/Desktop/图片/es架构图.drawio.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/ae530ee49a184643a6afb161c44154f5.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
 ##### 2.2、基本概念
-
 - 集群（cluster）
-
 ES集群由若干个节点组成，这些节点在同一个网络内，集群名字相同
-
 - 节点（node）
-
 一个ES实例，本质上是一个java进程，生产环境一般建议都是一台机器上运行一个ES实例。节点分类如下：
 
 1. master 节点：集群中的一个节点会被选为 master 节点，负责管理集群范畴的变更，例如创建或删除索引，添加节点到集群或从集群删除节点。master 节点无需参与文档层面的变更和搜索，这意味着仅有一个 master 节点并不会因流量增长而成为瓶颈。任意一个节点都可以成为 master 节点
@@ -64,9 +57,7 @@ ES集群由若干个节点组成，这些节点在同一个网络内，集群名
 > shard = hash(routing) % number_of_primary_shards
 
 routing 是一个可变值，默认是文档的 _id，也可以设置成一个自定义的值。number_of_prmary_shards，所以在创建索引时候就确定以好主分片的数量。
-
-![](/Users/xiaotongxin/Desktop/图片/多节点.drawio.png)
-
+![在这里插入图片描述](https://img-blog.csdnimg.cn/95bcf6b61aa5430a80e9e5153ca2d585.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 ###### 3.1.2、协调节点
 
 节点分为主节点、数据节点和客户端节点(只做请求的分发和汇总)。每个节点都可以接受客户端的请求，每个节点都知道集群中任意文档位置，所以可以直接将请求转发到需要的节点上，当接受请求后，节点变为协调节点，参与转发。
@@ -88,8 +79,8 @@ routing 是一个可变值，默认是文档的 _id，也可以设置成一个�
 ###### 3.1.3、节点故障转移
 
 原集群：索引设置的是 3 主 1 从(索引设置的3个主分片，每个主分片一个从分片)。Node1 是 master 节点，P0、P1、P2 是主分片，R0、R1、R2 是从分片。
+![在这里插入图片描述](https://img-blog.csdnimg.cn/6795067d773b4ef7ad7d3405e8efb346.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
-![](/Users/xiaotongxin/Desktop/图片/节点故障转移.drawio.png)
 
 1. Node1 宕机，重选 master 节点，Node2 成为 master 节点；
 2. Node3 上的 R0 上升成 P0，此时主分片恢复；
@@ -146,8 +137,8 @@ routing 是一个可变值，默认是文档的 _id，也可以设置成一个�
   2、term 数量很多，查找某个指定的 term 会变慢，因此采用 Term Dictionary，对于 term 进行排序，采用二分查找查询 logN次才能查到
 
   3、即便变成查询 logN 次，但是由于数据不可能全量放在内存，因此还是存在磁盘操作，磁盘操作导致耗时增加，因此通过 trie 树，构建 Term Index。一般的 Trie树实现，例如 abc、ab，cd，c，mn 这些term，建立 trie 树，如下所示：
+![在这里插入图片描述](https://img-blog.csdnimg.cn/3ad0739213da4714bcae273b4caaeda7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_17,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
-  ![](/Users/xiaotongxin/Desktop/图片/trie树.drawio.png)	 
 
 该 trie 树不会存储所有的 terms。当查找对应的 term，根据 trie 树找到 Term Dictionary 对应的 offset， 从偏移的位置往后顺序查找。除此以外，term index 在内存中是以 FST(finite state transducers)的形式保存的，其特点是非常节省内存的。Term Dictionary 在磁盘上是以分 block 的方式保存的，一个 block 内部利用公共前缀压缩，比如都是 Ab 开头的单词就可以把 Ab省去。这样 term Dictionary 可以比 b-tree 更加节约磁盘空间。
 
@@ -178,17 +169,15 @@ routing 是一个可变值，默认是文档的 _id，也可以设置成一个�
 ES 底层基于 Lucene，最核心的概念就是 Segment(段)，每个段本身就是一个倒排索引，ES 的 index 由多个段的集合和 commit point(提交点，一个列出了所有已知段的文件)文件组成。
 
 > 一个 Lucene 索引，在 ES 称作分片，一个 ES 索引是分片的集合，当 ES 在索引中搜索的时候，发送查询到每一个属于索引的分片(Lucene 索引)，然后像分布式检索提到的集群，合并每个分片的结果到一个全局的结果集。
+![在这里插入图片描述](https://img-blog.csdnimg.cn/0880efe9479e48f78d65f8a84b1e44bf.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_18,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
-![](/Users/xiaotongxin/Desktop/图片/Lucene索引.drawio.png)
 
 新的文档首先被添加到内存索引缓存中，然后写入到一个基于磁盘的段，如下图所示：
 
-![](/Users/xiaotongxin/Desktop/图片/内存索引缓存.drawio.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/d22a8f5c79dc488aa42d296142275dbf.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_16,color_FFFFFF,t_70,g_se,x_16#pic_center)
+											一个 Lucene 索引(三个段加上一个提交点) + 内存索引缓存
 
-​														一个 Lucene 索引(三个段加上一个提交点) + 内存索引缓存
-
-![](/Users/xiaotongxin/Desktop/图片/四个段一个提交点.drawio.png)
-
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2af635ac723344798c50680dd767696d.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 ​														一个 Lucene 索引(四个段加上一个提交点)
 
 当一个查询触发时，按段对所有已知的段查询，词项统计会对所有段的结果进行聚合，以保证每个词和每个文档的关联都被准确计算。这种方式可以用相对较低的成本将新文档添加到索引。那聚合过程中，对于更新的或者删除的数据如何处理的呢？
@@ -202,10 +191,8 @@ ES 底层基于 Lucene，最核心的概念就是 Segment(段)，每个段本身
 在 ES 和磁盘之间是文件系统缓存，在内存索引缓冲区中的文档会被写入到一个新的段中，但是这里新段会被写入到文件系统缓存，稍后再被刷新到磁盘，不过只要文件已经在文件系统缓存中，就可以像其他文件一样被打开和读取了。
 
 下面图示，在文件系统缓存中的新段对搜索可见。
-
-![](/Users/xiaotongxin/Desktop/图片/内存索引缓存.drawio.png)
-
-<img src="/Users/xiaotongxin/Desktop/图片/近实时搜索.drawio.png" style="zoom:200%;" />
+![在这里插入图片描述](https://img-blog.csdnimg.cn/55d59a7917794e2699859fdc583f2382.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_16,color_FFFFFF,t_70,g_se,x_16#pic_center)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2f1b12f99ac841f698220aada5d33d0c.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
 > refresh
 >
@@ -217,7 +204,7 @@ ES 底层基于 Lucene，最核心的概念就是 Segment(段)，每个段本身
 
 1、一个文档被索引之后，就会被添加到内存缓冲区，并且追加到了 translog
 
-![](/Users/xiaotongxin/Desktop/图片/持久化变更1.drawio.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/fb486a20c48240579659c45ea5a9a1e7.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_16,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
 2、刷新使分片处于下图的状态，分片每秒被刷新一次
 
@@ -227,11 +214,11 @@ ES 底层基于 Lucene，最核心的概念就是 Segment(段)，每个段本身
 
 ​		· 内存缓冲区被清空
 
-![](/Users/xiaotongxin/Desktop/图片/持久化变更2.drawio.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/2c43b79589a04e0f8a816dddb7d8cc36.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
 3、这个进程继续工作，更多的文档被添加到内存缓冲区和追加到事务日志
+![在这里插入图片描述](https://img-blog.csdnimg.cn/726526f63cb34f32b98074eabfbf0467.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
-![](/Users/xiaotongxin/Desktop/图片/持久化变更3.drawio.png)
 
 4、每隔一段时间，当 translog 变得越来越大时，索引被刷新，一个新的 translog 被创建，并且一个全量提交被执行
 
@@ -240,9 +227,7 @@ ES 底层基于 Lucene，最核心的概念就是 Segment(段)，每个段本身
 - 一个提交点被写入磁盘
 - 文件系统缓存通过 fsync 被刷新
 - 老的 translog 被删除
-
-![](/Users/xiaotongxin/Desktop/图片/持久化变更4.drawio.png)
-
+![在这里插入图片描述](https://img-blog.csdnimg.cn/41b75c2f4c8d464985457bf6b60c5040.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 ​	所有在内存中的 segment 被提交到了磁盘，同时清楚 translog
 
 > flush
@@ -268,8 +253,7 @@ ES 的 refresh 操作是为了让最新的数据可以立即被搜索到，而 f
 ​		· 新的段被打开用来搜索
 
 ​		· 老的段被删除
-
-![](/Users/xiaotongxin/Desktop/图片/段合并.drawio.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/319250f5863d4df8a17125eca8ff0c27.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBA5ZSJLg==,size_20,color_FFFFFF,t_70,g_se,x_16#pic_center)
 
 ##### 3.3、ES并发控制原理
 
