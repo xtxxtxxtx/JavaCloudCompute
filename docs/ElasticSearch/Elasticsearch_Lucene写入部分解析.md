@@ -1,5 +1,4 @@
-﻿@[toc]
-## 1、ElasticSearch和Lucene
+﻿## 1、ElasticSearch和Lucene
 ### 1.1、elasticsearch
 Elasticsearch 是一个基于 Apache Lucene的开源搜索引擎，它在Lucene的基础上还提供了：
 - 分布式的准实时文件存储
